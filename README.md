@@ -43,3 +43,38 @@ public async Task<IActionResult> Import([FromBody] Pedido pedido)
    - Apresente a estrutura básica da lógica.
 
    Foi utilizado o Observer Pattern, simples, de forma assícrona e escalável. Vide: [Explicação da mensageria assícrona](csharp/Estrutura-mensagem-evento-assincrona.md)
+
+---
+
+### Parte 2 – Python (enriquecimento com fallback)
+
+Você deve criar uma função `enrich_order(order: dict) -> dict` que:
+
+- Valida a entrada
+- Simula chamada externa para enriquecer os dados
+- Em caso de falha, busca os dados de um **cache local com expiração de 5 minutos**
+- Sempre retorna o pedido com o campo `"cliente_nome"`
+
+#### Tarefas:
+
+1. Implemente a função `enrich_order`.
+2. Crie um sistema de **cache local com expiração** (dicionário simples).
+3. Escreva testes cobrindo:
+   - Sucesso no enriquecimento
+   - Fallback em caso de erro
+   - Expiração de cache
+4. Explique como lidaria com **concorrência** se vários processos chamassem a função ao mesmo tempo.
+
+#ATENÇÃO Explicações da tarefa 2 vide: [Readme Python](python/readme.md)
+---
+
+### Parte 3 – Raciocínio Técnico
+
+Responda às seguintes perguntas diretamente neste arquivo (README.md):
+
+1. Que problemas você antecipa ao integrar os dois módulos?
+2. Como garantiria **consistência de dados** entre os serviços, considerando que o envio de mensagens é assíncrono?
+3. Como garantiria **observabilidade** (ex: logs e rastreabilidade)?
+4. Como prepararia esse sistema para escalar horizontalmente sem perder rastreabilidade e tolerância a falhas?
+
+---
