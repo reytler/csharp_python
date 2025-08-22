@@ -53,7 +53,7 @@ def _simulate_external_enrichment(order: dict) -> dict:
 * Chama a função ```_simulate_external_enrichment``` e se ela falhar tenta obter os dados em cache local e se não houver cache, retorna ```cliente_nome``` com valor "Desconhecido".
 * Seguindo o fluxo padrão retorna o pedido enriquecido com o ```cliente_nome```
 
-# Considerações sobre concorrência
+# item 4 - Considerações sobre concorrência
 * O código atual não é thread-safe. Se vários processos ou threads chamarem enrich_order simultaneamente, pode haver condições de corrida no acesso ao dicionário _cache.
 
 * Para resolver isso:

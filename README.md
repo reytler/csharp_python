@@ -67,16 +67,34 @@ Você deve criar uma função `enrich_order(order: dict) -> dict` que:
    - Expiração de cache
 4. Explique como lidaria com **concorrência** se vários processos chamassem a função ao mesmo tempo.
 
-#ATENÇÃO Explicações da tarefa 2 vide: [Readme Python](python/readme.md)
+#ATENÇÃO Explicações da tarefa 2 item 4( **concorrência** ) vide: [Readme Python](python/readme.md)
 ---
 
 ### Parte 3 – Raciocínio Técnico
 
 Responda às seguintes perguntas diretamente neste arquivo (README.md):
-
 1. Que problemas você antecipa ao integrar os dois módulos?
-2. Como garantiria **consistência de dados** entre os serviços, considerando que o envio de mensagens é assíncrono?
-3. Como garantiria **observabilidade** (ex: logs e rastreabilidade)?
-4. Como prepararia esse sistema para escalar horizontalmente sem perder rastreabilidade e tolerância a falhas?
+    * Ao integrar os módulos eu me preocuparia com os contratos/serialização, versionamento do payload
+    * Chamadas externas podem falhar, ter intermitência, causar duplicidade, latência.
+    * Os possíveis podem criar duplicidade
+    * O cache local precisa ser compartilhado fora do processo do python. Poderia usar um redis.
+    * Me preocuparia com os logs, a observabilidade.
+    * E com a segurança, poderiamos usar algum sistema de Tokens, como o OAuth.
 
+2. Como garantiria **consistência de dados** entre os serviços, considerando que o envio de mensagens é assíncrono?
+    * Como a messageria é assíncrona, eu emitiria o evento na mesma transação do banco. Poderiamos usar um padrão SAGA,
+     mas acho que não precisaria neste caso, a emissão do evento na transaction resolveria.
+    * Além de utilizar filas usando ID(GUID) por evento no Produtor e no Consumidor armazenaria o histórico para a deduplicação, ignorando reprocessamentos.
+    * Utilizar estados no pedido, para a UI exibir, para ficar claro para o usuário.
+
+3. Como garantiria **observabilidade** (ex: logs e rastreabilidade)?
+    * Logs estruturados (JSON) com correlationId, pedidoId, clienteId, origem e latência.
+    * Métricas: taxa de sucesso/erro, acerto de cache, latência externa, fila de eventos
+    * Rastreamento de uma requisição do início ao fim.
+4. Como prepararia esse sistema para escalar horizontalmente sem perder rastreabilidade e tolerância a falhas?
+    * Para escalar eu utilizaria serviços stateless com cache compartilhado.
+    * Centralizaria os logs com um SEQ Log, por exemplo.
+    * Utilizaria retry/backoff e circuit breaker para não sobrecarregar mais ainda o serviço externo caso falhasse
+        - Reenvios com tempo de espera, a cada vez que há muitas falhas o tempo de espera é aumentado até o serviço 
+        externo voltar a responder corretamente.
 ---
