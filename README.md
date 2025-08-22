@@ -32,6 +32,8 @@ public async Task<IActionResult> Import([FromBody] Pedido pedido)
     * Código reescrito utilizando programação assícrona corretamente
     * O Serviço _pedidoService foi criado e inserido no Conteiner DI do Asp.Net, sendo assim instanciado no construtor do controller
     * Foi criada uma classe de Dto com validações por DataAnnotations
+    * Eu entendo que o endpoint seja uma importação vinda de outro sistema, portanto aceito enviar o Id pela request,
+        porém o ideal é o servidor gerar o Id antes de salvar no banco.
     * Agora os HTTP status retornam a devida informação
     * Foi criado o tratamento de exceção com bloco tryCatch
 
