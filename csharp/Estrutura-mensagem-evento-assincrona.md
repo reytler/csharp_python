@@ -1,7 +1,7 @@
 # Como eu implementaria a emissão de uma mensagem de evento assíncrona (sem usar bibliotecas prontas).
 
 
-A ideia é criar um **EventBus interno** simples que permite que múltiplos consumidores sejam notificados de forma assíncrona sempre que um pedido é importado.
+A ideia é usar **Observer Pattern** simples que permite que múltiplos consumidores sejam notificados de forma assíncrona sempre que um pedido é importado.
 
 ---
 
@@ -10,100 +10,94 @@ A ideia é criar um **EventBus interno** simples que permite que múltiplos cons
 Quando um pedido é importado:
 
 1. O serviço salva o pedido no armazenamento (memória ou banco de dados).  
-2. Em seguida, dispara um evento (`PedidoImportadoEvent`) que contém os dados do pedido.  
-3. Consumidores registrados no sistema processam o evento de forma assíncrona.
+2. Há um Subject que mantém uma lista de observadores (Observers).
+3. Quando o estado do Subject muda(O Pedido Service salva o pedido), ele notifica todos os observadores.
 
 ---
 
 ## 2. Estrutura básica da lógica
 
-### a) Evento de domínio
+### Sujeito: PedidoService
+### Observadores: consumidores que processam os eventos de pedido (e-mail, atualização de outro sistema, logs etc.).
 
 ```csharp
-public class PedidoImportadoEvent
+public interface IPedidoObserver
 {
-    public long PedidoId { get; set; }
-    public decimal Valor { get; set; }
+    Task PedidoImportado(Pedido pedido);
 }
 ```
 
-### b) Criar um EventBus simples
+### b) Serviço de pedidos como sujeito
 
 ```csharp
-public class SimpleEventBus
-{
-    private readonly List<Func<PedidoImportadoEvent, Task>> _handlers = new();
-
-    public void Subscribe(Func<PedidoImportadoEvent, Task> handler)
-    {
-        _handlers.Add(handler);
-    }
-
-    public async Task Publish(PedidoImportadoEvent evento)
-    {
-        foreach (var handler in _handlers)
-        {
-            _ = Task.Run(() => handler(evento));
-        }
-    }
-}
-```
-
-### c) Integrar ao PedidoService
-
-```csharp
-
 public class PedidoService
 {
     private static readonly List<Pedido> _pedidos = new();
-    private readonly SimpleEventBus _eventBus;
+    private readonly List<IPedidoObserver> _observers = new();
 
-    public PedidoService(SimpleEventBus eventBus)
+    public void RegisterObserver(IPedidoObserver observer)
     {
-        _eventBus = eventBus;
+        _observers.Add(observer);
     }
 
     public async Task<Pedido> Salvar(Pedido pedido)
     {
         _pedidos.Add(pedido);
 
-        // Publicar evento após salvar
-        var evento = new PedidoImportadoEvent
+        // Notifica todos os observadores
+        foreach (var observer in _observers)
         {
-            PedidoId = pedido.Id,
-            Valor = pedido.Valor
-        };
-        await _eventBus.Publish(evento);
+            // Task.Run cria uma task em background, separada do fluxo principal do método Salvar.
+            _ = Task.Run(() => observer.PedidoImportado(pedido));
+        }
 
-        return pedido;
+        return Task.FromResult(pedido);
     }
 
     public Task<List<Pedido>> Listar() => Task.FromResult(_pedidos);
 }
-
 ```
 
-### d) Registrar consumidores
+### c) Exemplo de observadores
+
 ```csharp
-var eventBus = new SimpleEventBus();
 
-// Consumidor que envia e-mail
-eventBus.Subscribe(async evento =>
+public class EmailObserver : IPedidoObserver
 {
-    await Task.Delay(500); // Simula processamento assíncrono
-    Console.WriteLine($"Email enviado para pedido {evento.PedidoId} no valor {evento.Valor}");
-});
+    public async Task PedidoImportado(Pedido pedido)
+    {
+        await Task.Delay(200); // Simula envio de e-mail
+        Console.WriteLine($"Email enviado para pedido {pedido.Id}");
+    }
+}
 
-// Consumidor que atualiza outro sistema
-eventBus.Subscribe(async evento =>
+public class LogObserver : IPedidoObserver
 {
-    await Task.Delay(500);
-    Console.WriteLine($"Sistema externo notificado para pedido {evento.PedidoId}");
-});
+    public async Task PedidoImportado(Pedido pedido)
+    {
+        await Task.Delay(100); // Simula log
+        Console.WriteLine($"Pedido {pedido.Id} registrado no log");
+    }
+}
 
-var service = new PedidoService(eventBus);
-await service.Salvar(new Pedido { Id = 1, Valor = 100 });
+
 ```
+
+### d) Registro e uso
+```csharp
+
+var service = new PedidoService();
+service.RegisterObserver(new EmailObserver());
+service.RegisterObserver(new LogObserver());
+
+await service.Salvar(new Pedido { Id = 1, Valor = 100 });
+
+```
+
+### OBS.: 
+    * Task.Run cria uma task em background, separada do fluxo principal do método Salvar.
+    * O método Salvar não espera os observers terminarem.
+    * Cada observer executa seu código de forma paralela e assíncrona.
 
 ## Resultado
 * Assincrono
