@@ -82,9 +82,9 @@ Responda às seguintes perguntas diretamente neste arquivo (README.md):
     * E com a segurança, poderiamos usar algum sistema de Tokens, como o OAuth.
 
 2. Como garantiria **consistência de dados** entre os serviços, considerando que o envio de mensagens é assíncrono?
-    * Como a messageria é assíncrona, eu emitiria o evento na mesma transação do banco. Poderiamos usar um padrão SAGA,
-     mas acho que não precisaria neste caso, a emissão do evento na transaction resolveria.
-    * Além de utilizar filas usando ID(GUID) por evento no Produtor e no Consumidor armazenaria o histórico para a deduplicação, ignorando reprocessamentos.
+    ## OBS.: Partindo da idéia de que o C# só recebe a importação do pedido e emite o evento para o Python enriquecer os dados.
+    * O Python consumiria uma fila e enriqueceria os dados e os alteraria diretamento no banco, afim de evitar complexidade caso devolvesse ao C# os dados enriquecidos.
+    * Como a messageria é assíncrona, eu emitiria o evento na mesma transação do banco(C#), a partir dai o Python se encarregaria do resto, falback, retry caso a api externa caíse.
     * Utilizar estados no pedido, para a UI exibir, para ficar claro para o usuário.
 
 3. Como garantiria **observabilidade** (ex: logs e rastreabilidade)?
