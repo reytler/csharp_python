@@ -2,21 +2,27 @@ using csharp.dtos;
 
 namespace csharp.Services;
 
-public class PedidoService
+public class PedidoService : IPedidoService
 {
-    private static readonly List<Pedido> _pedidos = new();
+    private readonly ILogger<PedidoService> _logger;
+
+    private static readonly List<PedidoDto> _pedidos = new();
+
+    public PedidoService(ILogger<PedidoService> logger)
+    {
+        _logger = logger;
+    }
+
 
     /// <summary>
-    /// Salva um pedido e retorna o pedido criado.
+    /// Importa um pedido e retorna o pedido i´mportado.
     /// </summary>
-    public Task<Pedido> Salvar(Pedido pedido)
+    public async Task<PedidoDto> Salvar(PedidoDto pedido)
     {
+        await Task.Delay(50); 
         _pedidos.Add(pedido);
-        return Task.FromResult(pedido);
+        _logger.LogInformation("Pedido {PedidoId} salvo com sucesso.", pedido.Id);
+
+        return pedido;
     }
-    
-    /// <summary>
-    /// Retorna todos os pedidos salvos.
-    /// </summary>
-    public Task<List<Pedido>> Listar() => Task.FromResult(_pedidos);
 }

@@ -1,8 +1,12 @@
 ﻿using csharp.dtos;
 using csharp.Services;
 using FluentAssertions;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.VisualStudio.TestPlatform.TestHost;
+using System.Net;
 using System.Net.Http.Json;
 
 namespace csharp.tests;
@@ -15,34 +19,47 @@ public class PedidoControllerTests : IClassFixture<WebApplicationFactory<Program
         _client = factory.CreateClient();
     }
 
-    [Fact]
+    [Fact(DisplayName = "Deve importar o pedido corretamente")]
     public async Task Import_Pedido_Valido_Should_Return_Ok()
     {
-        var pedido = new Pedido
+        var pedido = new PedidoDto
         {
             Id = 1,
             Valor = 100.50m
         };
 
-        // Act
         var response = await _client.PostAsJsonAsync("/api/Pedido", pedido);
 
-        // Assert
-        response.EnsureSuccessStatusCode(); // 200 OK
         var content = await response.Content.ReadAsStringAsync();
-        content.Should().Contain("Pedido importado com sucesso");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(content, $"Import order of id {pedido.Id}");
     }
 
-    [Fact]
+    [Fact(DisplayName = "Deve recusar o pedido")]
+    public async Task Import_Pedido_Valido_Should_Return_BadRequest()
+    {
+        var pedido = new PedidoDto
+        {
+            Id = null,
+            Valor = 100.50m
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/Pedido", pedido);
+
+        var content = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact(DisplayName = "Deve salvar o pedido no service corretamente.")]
     public async Task Salvar_Deve_Adicionar_Pedido()
     {
-        var service = new PedidoService();
-        var pedido = new Pedido { Valor = 100 };
+        var service = new PedidoService(NullLogger<PedidoService>.Instance);
+        var pedido = new PedidoDto {Id= 1, Valor = 100 };
 
         var resultado = await service.Salvar(pedido);
-        resultado.Should().NotBeNull();
-
-        var lista = await service.Listar();
-        lista.Should().Contain(p => p.Valor == 100);
+        Assert.NotEqual(default, pedido.Id);
+        Assert.Equal(resultado.Id, pedido.Id);
     }
 }

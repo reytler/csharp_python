@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 
 namespace csharp.dtos;
-public class Pedido
+public class PedidoDto
 {
     [Required(ErrorMessage = "O Id é obrigatório.")]
     [Range(1, long.MaxValue, ErrorMessage = "O Id deve ser maior que zero.")]

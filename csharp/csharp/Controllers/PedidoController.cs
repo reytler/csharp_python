@@ -9,24 +9,29 @@ namespace csharp.Controllers;
 [Route("api/[controller]")]
 public class PedidoController : ControllerBase
 { 
-    private readonly PedidoService _pedidoService;
+    private readonly IPedidoService _pedidoService;
+    private readonly ILogger<PedidoController> _logger;
 
-    public PedidoController(PedidoService pedidoService)
+    public PedidoController(IPedidoService pedidoService, ILogger<PedidoController> logger)
     {
         _pedidoService = pedidoService;
+        _logger = logger;
     }
-    
+
     [HttpPost]
-    public async Task<IActionResult> Import([FromBody] Pedido pedido)
+    public async Task<IActionResult> Import([FromBody] PedidoDto pedido)
     {
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
         try
         {
-            var pedidoImportado = await _pedidoService.Salvar(pedido);
-            return Ok("Pedido importado com sucesso");
+            var created = await _pedidoService.Salvar(pedido);
+            return Ok($"Import order of id {created.Id}");
         }
-        catch
+        catch(Exception ex)
         {
-            return BadRequest("Erro ao importar pedido");
+            _logger.LogError(ex,"Erro ao importar pedido: {pedido}", pedido);
+            return Problem(statusCode:500,title:"Erro interno",detail: $"Erro ao importar pedido: {pedido}");
         }      
     }
 }

@@ -7,7 +7,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton<PedidoService>();
+builder.Services.AddScoped<IPedidoService,PedidoService>();
 
 var app = builder.Build();
 
